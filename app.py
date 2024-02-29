@@ -1,6 +1,14 @@
 import streamlit as st
 import requests
 import json
+from dotenv import dotenv_values
+import google-generativeai as genai
+
+# Load environment variables from .env file
+config = dotenv_values(".env")
+
+# Extract the API key from the loaded configuration
+openai_api_key = config.get("API_KEY")
 
 app_url = "http://localhost:8000"
 endpoint = "/generate"
