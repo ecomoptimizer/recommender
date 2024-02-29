@@ -2,32 +2,27 @@ import requests
 from bs4 import BeautifulSoup
 from dotenv import dotenv_values
 
-from langchain.llms import OpenAI
+from langchain.llms import openai
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import CommaSeparatedListOutputParser
 
 def scrape_website_text(website_url):
-        try:
-            response = requests.get(website_url)
-            if response.status_code == 200:
-                # Parse the HTML content using BeautifulSoup
-                soup = BeautifulSoup(response.content, 'html.parser')
-                
-                # Extract text content from paragraphs and headers
-                text_content = ""
-                for paragraph in soup.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
-                    text_content += paragraph.get_text() + " "
-                
-                return text_content
-            else:
-                print("Failed to fetch website content")
-                return ""
-        except Exception as e:
-            print("An error occurred:", e)
+    try:
+        response = requests.get(website_url)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            text_content = ""
+            for paragraph in soup.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
+                text_content += paragraph.get_text() + " "
+            return text_content
+        else:
+            print("Failed to fetch website content")
             return ""
+    except Exception as e:
+        print("An error occurred:", e)
+        return ""
 
-def get_brand_tone_and_voice(website_url, OPENAI_API_KEY):
-
+def get_brand_tone_and_voice(website_url, api_key):
     website_text = scrape_website_text(website_url)
 
     template = """
@@ -37,38 +32,16 @@ def get_brand_tone_and_voice(website_url, OPENAI_API_KEY):
     {company_info}
 
     You are tasked to produce a list of exactly 5 words that capture the company's brand tone and voice. 
-
-    Please provide only a list of comma separated  emotions.
+    Please provide only a list of comma-separated emotions.
     """
 
-    prompt = PromptTemplate(
-        template=template,
-        input_variables=["company_info"]
-    )
-
+    prompt = PromptTemplate(template=template, input_variables=["company_info"])
     formatted_prompt = prompt.format(company_info=website_text)
 
-    llm = OpenAI(openai_api_key=OPENAI_API_KEY)
+    llm = openai(openai_api_key=api_key)
     response = llm(formatted_prompt)
 
     return response
-
-def format_json_to_multiline_string(data):
-    result = []
-    
-    def recursive_format(data, indent_level=0):
-        if isinstance(data, dict):
-            for key, value in data.items():
-                result.append("    " * indent_level + f"{key}:")
-                recursive_format(value, indent_level + 1)
-        elif isinstance(data, list):
-            for item in data:
-                result.append("    " * indent_level + f"- {item}")
-        else:
-            result.append("    " * indent_level + f"{data}")
-    
-    recursive_format(data)
-    return "\n".join(result)
 
 def gather_user_inputs():
     print("1. Business Information:")
@@ -84,7 +57,7 @@ def gather_user_inputs():
     print("\n3. Email Structure:")
     call_to_action = input("   - Call to Action (CTA): ")
 
-    print("\n4. Product/Service Information (If Applicable):")
+    print("\n4. Product/Service Information (if applicable):")
     product_details = input("   - Product/Service Details: ")
     features_benefits = input("   - Features and Benefits: ")
 
@@ -96,8 +69,8 @@ def gather_user_inputs():
     email_sequence_narrative = input("   - Email Sequence Narrative: ")
 
     print("\n7. Pain Points and Solutions:")
-    pain_points = input("   - Pain Points Addressed (comma-separated list): ").split(",")
-    solutions_presented = input("   - Solutions Presented (comma-separated list): ").split(",")
+    pain_points = [item.strip() for item in input("   - Pain Points Addressed (comma-separated list): ").split(",")]
+    solutions_presented = [item.strip() for item in input("   - Solutions Presented (comma-separated list): ").split(",")]
 
     inputs = {
         "business_name": business_name,
@@ -116,5 +89,3 @@ def gather_user_inputs():
         "solutions_presented": solutions_presented,
     }
     return inputs
-
-
